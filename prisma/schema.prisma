@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model InvitationGroup {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  maxGuests     Int      @default(2)
+  plusOneAllowed Boolean  @default(false)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  guests        Guest[]
+  invitedEvents InvitationEvent[]
+}
+
+model Guest {
+  id          String  @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  isMainGuest Boolean @default(false)
+
+  groupId String
+  group   InvitationGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  rsvps Rsvp[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([groupId])
+  @@index([lastName, firstName])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  date        DateTime
+  startTime   String
+  endTime     String?
+  location    String
+  address     String?
+  description String?
+  mapUrl      String?
+  sortOrder   Int      @default(0)
+
+  rsvps         Rsvp[]
+  invitedGroups InvitationEvent[]
+}
+
+model InvitationEvent {
+  id      String @id @default(cuid())
+  groupId String
+  eventId String
+
+  group InvitationGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  event Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, eventId])
+}
+
+model Rsvp {
+  id                        String   @id @default(cuid())
+  guestId                   String
+  eventId                   String
+  attending                 Boolean
+  mealChoice                String?
+  dietaryRestrictions       String?
+  plusOneName               String?
+  plusOneMealChoice          String?
+  plusOneDietaryRestrictions String?
+  songRequest               String?
+  notes                     String?
+  submittedAt               DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  guest Guest @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([guestId, eventId])
+  @@index([eventId])
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+}
